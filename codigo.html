@@ -1,0 +1,599 @@
+<!-- Inicio do código -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Import Cell - Celulares Importados</title>
+<script src="https://cdn.tailwindcss.com"></script>
+
+	<!-- CSS -->
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap');
+
+:root {
+--blue: #00bfff;
+--pink: #ff69b4;
+}
+
+* { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+body { font-family: 'Inter', system_ui, sans-serif; }
+
+.product-card:hover {
+    transform: translateY(-12px);
+    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.15);
+}
+
+.color-circle {
+    width: 42px; height: 42px; border-radius: 50%; cursor: pointer;
+    border: 3px solid #fff; box-shadow: 0 0 0 4px #e5e7eb;
+}
+.color-circle.selected {
+    border: 3px solid #00bfff; box-shadow: 0 0 0 6px #bae6fd; transform: scale(1.12);
+}
+.storage-btn.active {
+    background-color: #00bfff; color: white; border-color: #00bfff; transform: scale(1.05);
+}
+</style>
+</head>
+<body class="bg-slate-50">
+
+<!-- HEADER -->
+<header class="bg-white shadow-sm sticky top-0 z-50">
+<div class="w-full px-4 sm:px-6 py-5 flex justify-between items-center max-w-screen-2xl mx-auto">
+    <div class="flex items-center gap-3">
+        <div class="w-11 h-11 bg-gradient-to-br from-[#00bfff] to-[#ff69b4] rounded-3xl flex items-center justify-center text-3xl shadow">📱</div>
+        <h1 class="text-3xl font-bold tracking-tighter bg-gradient-to-r from-[#00bfff] to-[#ff69b4] bg-clip-text text-transparent">Import Cell</h1>
+    </div>
+    <div class="flex items-center gap-6">
+        <button onclick="showAuthModal()" id="auth-button" class="flex items-center gap-2 text-lg hover:text-[#00bfff]">Entrar / Cadastrar 👤</button>
+        <button onclick="toggleCart()" class="flex items-center gap-2 hover:scale-110 transition relative">
+            🛒 <span id="cart-count" class="absolute -top-2 -right-2 bg-pink-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">0</span>
+        </button>
+    </div>
+</div>
+</header>
+
+<main class="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 py-10">
+    <h1 class="text-5xl font-bold text-center mb-4 text-slate-800">Celulares Importados</h1>
+    <p class="text-center text-slate-600 mb-12 text-lg">Os melhores preços do mercado com qualidade premium</p>
+
+    <div class="mb-16">
+        <h2 class="text-4xl font-bold mb-2 text-slate-800">Recomendados para você</h2>
+        <div id="recomendados-grid" class="grid grid-cols-1 md:grid-cols-3 gap-8"></div>
+    </div>
+
+    <h2 class="text-3xl font-bold mb-6 text-slate-800">Todos os Celulares</h2>
+    <div id="produtos-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"></div>
+</main>
+
+<!-- MODAL DO PRODUTO -->
+<div id="product-modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onclick="if(event.target === this) closeProductModal()">
+    <div class="bg-white rounded-3xl w-full max-w-lg max-h-[95vh] overflow-y-auto relative" onclick="event.stopImmediatePropagation()">
+        <button onclick="closeProductModal()" class="absolute top-5 right-5 text-4xl">×</button>
+        <div class="p-6">
+            <h2 id="modal-nome" class="text-2xl font-bold mb-4"></h2>
+            <div class="bg-slate-50 rounded-2xl p-4 mb-6 flex justify-center min-h-[300px]">
+                <img id="modal-imagem" class="max-h-[380px] w-full object-contain" alt="Celular">
+            </div>
+            <p id="modal-descricao" class="text-slate-600 mb-6 leading-relaxed"></p>
+
+            <div class="mb-6">
+                <p class="font-semibold mb-3 text-slate-700">Armazenamento</p>
+                <div id="storage-options" class="flex flex-wrap gap-3"></div>
+            </div>
+            <div class="mb-8">
+                <p class="font-semibold mb-3 text-slate-700">Cor</p>
+                <div id="color-options" class="flex gap-4"></div>
+            </div>
+
+            <div class="flex justify-between items-center pt-4 border-t">
+                <div>
+                    <span class="text-sm text-slate-500">Preço</span>
+                    <p id="modal-preco" class="text-3xl font-bold text-[#00bfff]"></p>
+                </div>
+                <button onclick="adicionarAoCarrinho()" class="px-10 py-4 bg-gradient-to-r from-[#00bfff] to-[#ff69b4] text-white font-semibold rounded-3xl">
+                    Adicionar ao Carrinho
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CARRINHO -->
+<div id="cart-drawer" class="hidden fixed inset-0 bg-black/70 z-[150] flex justify-end">
+    <div class="bg-white w-full max-w-md h-full shadow-2xl flex flex-col relative">
+        <button onclick="toggleCart()" class="absolute top-5 right-5 text-4xl">×</button>
+        <div class="px-6 py-5 border-b"><h3 class="text-2xl font-bold">Seu Carrinho</h3></div>
+        <div id="cart-items" class="flex-1 overflow-auto p-6 space-y-6"></div>
+        <div class="p-6 border-t">
+            <div class="space-y-3 mb-6">
+                <div class="flex justify-between"><span class="text-slate-600">Subtotal</span><span id="subtotal">R$ 0,00</span></div>
+                <div class="flex justify-between"><span class="text-slate-600">Frete</span><span class="text-green-600">R$ 15,00</span></div>
+                <div class="flex justify-between text-xl font-bold border-t pt-4">
+                    <span>Total</span><span id="cart-total" class="text-[#00bfff]">R$ 0,00</span>
+                </div>
+            </div>
+            <button onclick="showCheckoutModal()" class="w-full py-6 bg-gradient-to-r from-[#00bfff] to-[#ff69b4] text-white font-semibold text-xl rounded-3xl">
+                Finalizar Compra
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Pagamento MODAL -->
+<div id="checkout-modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[200] p-4">
+    <div class="bg-white rounded-3xl w-full max-w-lg max-h-[95vh] overflow-y-auto">
+        <div class="p-8">
+            <h2 class="text-3xl font-bold mb-6">Finalizar Compra</h2>
+            
+            <div class="mb-8">
+                <p class="font-semibold mb-4 text-slate-700">Método de Pagamento</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <button onclick="selectPaymentMethod('pix')" id="btn-pix" class="border-2 border-[#00bfff] bg-blue-50 rounded-2xl p-6 text-center hover:scale-105">
+                        📱 PIX
+                    </button>
+                    <button onclick="selectPaymentMethod('cartao')" id="btn-cartao" class="border-2 border-slate-200 rounded-2xl p-6 text-center hover:scale-105">
+                        💳 Cartão de Crédito
+                    </button>
+                </div>
+            </div>
+
+            <div id="cartao-form" class="hidden space-y-4 mb-8">
+                <input type="text" id="numero-cartao" maxlength="19" placeholder="0000 0000 0000 0000" class="w-full px-4 py-3 border border-slate-300 rounded-2xl">
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="text" id="validade-cartao" placeholder="MM/AA" class="w-full px-4 py-3 border border-slate-300 rounded-2xl">
+                    <input type="text" id="cvv-cartao" maxlength="4" placeholder="CVV" class="w-full px-4 py-3 border border-slate-300 rounded-2xl">
+                </div>
+                <input type="text" id="nome-cartao" placeholder="Nome completo no cartão" class="w-full px-4 py-3 border border-slate-300 rounded-2xl">
+            </div>
+
+            <div class="mb-8">
+                <p class="font-semibold mb-3 text-slate-700">Endereço de Entrega</p>
+                <textarea id="endereco-entrega" rows="3" placeholder="Rua, número, bairro, cidade, CEP..." class="w-full px-4 py-3 border border-slate-300 rounded-2xl"></textarea>
+            </div>
+
+            <div class="flex justify-between items-center text-2xl font-bold mb-8">
+                <span>Total</span>
+                <span id="modal-total" class="text-[#00bfff]">R$ 0,00</span>
+            </div>
+
+            <button onclick="confirmarPagamento()" class="w-full py-6 bg-gradient-to-r from-[#00bfff] to-[#ff69b4] text-white font-semibold text-xl rounded-3xl">
+                Confirmar Pagamento
+            </button>
+            <button onclick="closeCheckoutModal()" class="mt-4 w-full text-slate-500 hover:text-slate-700">Voltar</button>
+        </div>
+    </div>
+</div>
+
+    <script>
+        // ==================== PRODUTOS ====================
+        let produtos = [
+
+            //-------------------- Celular 1 ------------------ //
+            {
+                id: 1,
+                nome: "iPhone 16 ",
+                descricao: "câmera dupla de 48 MP (Fusion) e 12 MP Ultra Angular",
+                precoBase: 9499,
+                imagemBase: "https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcTbBB5qvhsvoauxS4e3tAUatO1BCwLKhL3lnlbkg-tAmI-HFdkPIMMKN7lftzc7R5sfzoY8L2vaFRU7DNDZ4TBOa3mHWRsVxzT01uYtPq5ceQWNtyS9pyTdy-F1NkVKO3gAlmzdYlA&usqp=CAc",
+
+                cores: [
+                    { nome: "Rosa", cor: "#FF00FF", imagem: "https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcTbBB5qvhsvoauxS4e3tAUatO1BCwLKhL3lnlbkg-tAmI-HFdkPIMMKN7lftzc7R5sfzoY8L2vaFRU7DNDZ4TBOa3mHWRsVxzT01uYtPq5ceQWNtyS9pyTdy-F1NkVKO3gAlmzdYlA&usqp=CAc" },
+                    { nome: "Azul", cor: "#63B8FF", imagem: "https://encrypted-tbn2.gstatic.com/shopping?q=tbn:ANd9GcTyZCEgqKSimaZa-9ephS0vtezL0hnQz1HphFnapeIhOfH8VBOUSiKG7PCZYStWwc8-B3aum9f9kgqAhAXZ3U3emPkNh3Dvom9v4SYYnHqJCur9KATQohQtsIVFv_wXNnYtxbIoiio&usqp=CAc" },
+                    { nome: "Preto Espacial", cor: "#111111", imagem: "https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcSK4wbEfxvxfv_-WP-Ogf0mYxtPhBHtvkm8DOFmpRfOefQ-UTnfgtf5nDUL4xWeMhGxnXUiUDsAcAMQxQYvHXFfN5N52i0DMWyyngfrTGA6V--BQO4ogcUgPm_DWnzbcfVdj4czOJs&usqp=CAc" }
+                ],
+                armazenamento: [
+                    { tamanho: "128GB", preco: 6799 },
+                    { tamanho: "256GB", preco: 9499 },
+                    { tamanho: "512GB", preco: 10599 }
+                ]
+            },
+             
+            // ------------------- Celular 2 ------------------ //
+            {
+                id: 2,
+                nome: "Samsung Z Flip 6",
+                descricao: "câmera de nível profissional de 50MP",
+                precoBase: 5899,
+                imagemBase: "https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcT4La7W5pZv-WSiX3orApCPq_qhHKQ6neUm5LJpM4RERYHYjp2OrDv6wIQ33lx1NzLsq3K_nBkQLwfGR3CN1wpgeCkHcWOC3l6jTHa42ZFTm_TGLi43yTdMVYAw8H20cWyGadtkRsU&usqp=CAc",
+                cores: [
+                    { nome: "Azul", cor: "#BBFFFF", imagem: "https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcQG1MnPu_ZfeZLm3sF-DYdtkuQwpFiATrPTdK723qNN3uU1_Z7OHuIHvkJXEPNoH0Rc2i0rzaGGcSmbbnURDgidaQO1LpXjEeeMV9s_BfMioNxCrGZUEBMszmaFtI8XEGcM9j58Hcxf15o&usqp=CAc" },
+                    { nome: "Preto", cor: "#000000", imagem: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQy0CSVZVKkmn1-mXbPAR5pO09shN8l26WpCA&s"},
+                ],
+
+                armazenamento: [
+                    { tamanho: "256GB", preco: 5899 },
+                    { tamanho: "512GB", preco: 6599 },
+                ]
+            },
+
+            // ------------------- Celular 3 ------------------ //
+            {
+                id: 3,
+                nome: "xiaomi poco x7",
+                descricao: "tela AMOLED de 6,67 (1.5K, 120Hz), processador MediaTek Dimensity e bateria de 6000mAh",
+                precoBase: 3299,
+                imagemBase: "https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcTWsuNS4DtcXuUiXDBkMlFIia1OzhrjE6IHPQj_JCCrQZo5ZqFIeuz3uR-SiHzr9DbQ0JpOOlO8XoLDHWrnvwfHLn4HR11lQxQ3h5nyArxF75buYcR6GXupVs637tlKijZP2_QfdG0oYw&usqp=CAc",
+                cores: [
+                    { nome: "Preto", cor: "#111111", imagem: "https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcTqHFX1n8RWSLtyP1aZPsQkTpvN3hcboh0kQyY9bS2HKoGnemXUNcKqoh1mXodNhud6_cRSLr9Uy6hkIRSCh5clEYS-IeQlg9tE_bVf0mrtgSTyrSP1lYn29ZfE_mpIkMzmXngWlKBnzrs&usqp=CAc" },
+                    { nome: "Verde", cor: "#98FB98", imagem: "https://encrypted-tbn2.gstatic.com/shopping?q=tbn:ANd9GcSKBFjU9aCu06-VCm3-lLZMIOlXjeWthNF9m1wGaiF3sXWju3gPbPSjPO3iTJgB7MwiERDCyABkx3vlVURKin98e0dU0TFZ2WepbQtfHBX9egb3Y987iiQssJAkuqODI01wAsdD9WQL7A&usqp=CAc" }
+                ],
+                armazenamento: [
+                    { tamanho: "256GB", preco: 3299 },
+                    { tamanho: "512GB", preco: 3799 }
+                ]
+            },
+
+            // ------------------- Celular 4 ------------------ //
+            {
+                id: 4,
+                nome: "galaxy s24 ultra",
+                descricao: "A câmera Wide agora apresenta uma abertura 47% mais brilhante, que se abre para F1.4",
+                precoBase: 6000,
+                imagemBase: "https://encrypted-tbn0.gstatic.com/shopping?q=tbn:ANd9GcT3M8NMcrEZfpRH7xhBJXElMWnQSFN40rbSHLxm6RlvRIDtu-pyGngktH0SGwN8-EDg4yN-wbLv4QIxgp0ksz2lQlyFEXXaAaN43M8btsqcTRDr7KI8NRuxI5zWkScte7pXHaC7NQ&usqp=CAc",
+                cores: [
+                    { nome: "Preto", cor: "#111111", imagem: "https://encrypted-tbn0.gstatic.com/shopping?q=tbn:ANd9GcT3M8NMcrEZfpRH7xhBJXElMWnQSFN40rbSHLxm6RlvRIDtu-pyGngktH0SGwN8-EDg4yN-wbLv4QIxgp0ksz2lQlyFEXXaAaN43M8btsqcTRDr7KI8NRuxI5zWkScte7pXHaC7NQ&usqp=CAc" },
+                    { nome: "Cinza", cor: "#BEBEBE", imagem: "https://encrypted-tbn1.gstatic.com/shopping?q=tbn:ANd9GcR3jWLI249usPkuvk3W_ruiBCK5Dbje108ZH8avU3HDvbYqonu8zN4eh8GIEO5K99IOv6Fa3b7dlC29ZFXx2JXfmTm-MjMTcSYGlHpsB8iHD5x_2EIXGUXD2YpWncsJpPNteJI808E&usqp=CAc" }
+                ],
+                armazenamento: [
+                    { tamanho: "256GB", preco: 6000 },
+                    { tamanho: "512GB", preco: 8000 }
+                ]
+            },
+
+            // ------------------- Celular 5 ------------------ //
+            {
+                id: 5,
+                nome: "Iphone 17 Pro Max",
+                descricao: "Desempenho excepcional, nova câmera frontal Center Stage. Sistema de câmera Pro e duração de bateria avançada",
+                precoBase: 12000,
+                imagemBase: "https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcRrTzZQ67fDKTgLMPKPsEA_fS3_R2-pVqU0svJ6Py1xnXyl8nVNMk71dtR4-uxm6WnWITLp1PGf7LInjGbv5mEnAtZ6MONnfX_9xg_OjJxlIQCuK7oQ2txTZto75tDA21eHUyK3KQ&usqp=CAc",
+                cores: [
+                    { nome: "Laranja", cor: "#FFA500", imagem: "https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcRrTzZQ67fDKTgLMPKPsEA_fS3_R2-pVqU0svJ6Py1xnXyl8nVNMk71dtR4-uxm6WnWITLp1PGf7LInjGbv5mEnAtZ6MONnfX_9xg_OjJxlIQCuK7oQ2txTZto75tDA21eHUyK3KQ&usqp=CAc" },
+                    { nome: "Prateado", cor: "#CDC9C9", imagem: "https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcQzqG7xYdg-YsjhX4K7ALm55zWzvKEHpffmZhjmtSfLV1pZ3hjhXr9We0V9HB-1NXAznnedgaqR3ApuxYBxEb9yl3049UTi0V1FjnWDXyIyKbHRSYwYkfJjk2twkhrTgov2FLsDth3LPg&usqp=CAc" }
+                ],
+                armazenamento: [
+                    { tamanho: "256GB", preco: 12000 },
+                    { tamanho: "512GB", preco: 14000 }
+                ]
+            },
+
+            // ------------------- Celular 6 ------------------ //
+            {
+                id: 6,
+                nome: "OPPO Find X9 Pro",
+                descricao: " Sensor principal de 50MP com OIS de 4 eixos, ultra grande angular de 50MP e a revolucionária telefoto de 200MP com OIS",
+                precoBase: 9200,
+                imagemBase: "https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcQwzR6QYlUxFXH8zm8FQ6sMl8NfLlDoJiWRSZ-aCqemz3IPUV2mWJRiA2q6NimOmGL1ETDmiGXUbTcfklkW14Asu8Ecz_JXHh3cQbxuDo0K8atOaU_Tt5oMbvp5mwr8TosebM8yPQ&usqp=CAc",
+                cores: [
+                    { nome: "Vinho", cor: "#8B0000", imagem: "https://encrypted-tbn0.gstatic.com/shopping?q=tbn:ANd9GcTU24KQV4_0izS3gFPF-6fqH535FXrc0qX9pFR4a7E9gYEJ22I1129SiB_1arYS1DfgGk5eqwF8jy6VYAasD0wMWvqJIT7gEqC_8uyhR74HseN6HkCyrxsqJpLElbyoNEKoW-GEwtY&usqp=CAc" },
+                    { nome: "Grafite", cor: "#8B8970", imagem: "https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcQkcx-nqAMwR-LiXlf0dp8f9XyfBJKghPiEyx2tyxsxz3ETD5kezCuDzhrjCJTOXrsB1vJ4DLH2zAlr05yx4JMy3MQqm2zuTBmSFqOEbZo2HrhNmnis-sLN3iL_CB9b3JNkap3RmdY&usqp=CAc" }
+                ],
+                armazenamento: [
+                    { tamanho: "512GB", preco: 9200 },
+                    { tamanho: "1TB", preco: 10000 }
+                ]
+            },
+
+            // ------------------- Celular 7 ------------------ //
+            {
+                id: 7,
+                nome: "Oppo reno 14",
+                descricao: "Imagens vibrantes, movimento ultrafluido e uma experiência cinematográfica digna de um verdadeiro Lorde Sith. Sua resistência é lendária: o aparelho conta com certificações IP66/68/69",
+                precoBase: 3999,
+                imagemBase: "https://encrypted-tbn2.gstatic.com/shopping?q=tbn:ANd9GcRyDhGXmImOomnPYTuz9BRqwq_pm8eKbSe4GXee5kkNx8sRKINml4_hi0Sr-S9NXTR6soRCQq-Tf82GChzxGyY3Qeb0gYC1IkJmurDuI2Wh_CANHm3lI8RQ0UPvFGRi_lwjEprkIw&usqp=CAc",
+                cores: [
+                    { nome: "Preto", cor: "#000000", imagem: "https://encrypted-tbn2.gstatic.com/shopping?q=tbn:ANd9GcRyDhGXmImOomnPYTuz9BRqwq_pm8eKbSe4GXee5kkNx8sRKINml4_hi0Sr-S9NXTR6soRCQq-Tf82GChzxGyY3Qeb0gYC1IkJmurDuI2Wh_CANHm3lI8RQ0UPvFGRi_lwjEprkIw&usqp=CAc" },
+                ],
+                armazenamento: [
+                    { tamanho: "256", preco: 4000 },
+                ]
+            },
+
+            // ------------------- Celular 8 ------------------ //
+            {
+                id: 8,
+                nome: "Xiomi 17 Pro Max",
+                descricao: " É um dos dispositivos topo de linha mais avançados do mundo Android. Ele traz configurações premium com o processador Snapdragon 8 Elite (5ª Geração), tela AMOLED de 120 Hz",
+                precoBase: 6400,
+                imagemBase: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRi83wDAq8PQCuIaWOZJj8XtnAtCRP5tDo14A&s",
+                cores: [
+                    { nome: "Roxo", cor: "#DDA0DD", imagem: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ6pBi5yQnaw0sJfHQjJ58RBT-RWZK_DUodTw&s" },
+  		            { nome: "Verde" , cor: "#8FBC8F", imagem: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcStJS0wlcTbV33_0ju3d01fKV_7DFI2_3bRKQ&s" },	              
+		            { nome: "Preto" , cor: "#000000", imagem:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTlJuVYSE64DAmPHyFpIwxpvoSMMDTbeU2L_A&s"} ,  ],
+                 armazenamento: [
+                { tamanho: "512", preco: 6470 },
+                ]
+            },
+
+            // ------------------- Celular 9 ------------------ //
+            {
+                id: 9,
+                nome: "Iphone 17e",
+                descricao: "O iPhone 17e é o modelo de entrada da geração mais recente da Apple, focado em custo-benefício e em manter um design compacto. Ele é ideal para quem deseja entrar no ecossistema atual com um valor mais acessíve",
+                precoBase: 4999,
+                imagemBase: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9LK0n-S67JOm6CU019CyNHlxrXW_2FMj0lw&s",
+                cores: [
+                    { nome: "Rosa", cor: "#FFC0CB", imagem: "https://m.media-amazon.com/images/I/41YoC-wH37L._AC_UF1000,1000_QL80_.jpg" },
+  		            { nome: "Branco" , cor: "#FFF5EE", imagem: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRr0k0UiMUsgE7OZy9CyuasTPNb6lPLN3_l1A&s" },	              
+		             { nome: "Preto" , cor: "#000000", imagem:"https://m.media-amazon.com/images/I/61ULimPWODL._AC_UF894,1000_QL80_.jpg"} ,],
+                     armazenamento: [
+                     { tamanho: "256GB", preco: 4299 },
+                ]
+            },
+
+            // ------------------- Celular 10 ------------------ //
+            {
+                id: 10,
+                nome: "Iphone Air",
+                descricao: "O iPhone 17 Air destaca-se como o modelo mais fino da Apple, trazendo um design ultrafino de 5,6 mm e tela Super Retina XDR de 6,5 polegadas",
+                precoBase: 7199,
+                imagemBase: "https://cdn.awsli.com.br/2500x2500/2549/2549769/produto/370975457/01-k1t35esh12.png",
+                cores: [
+                    { nome: "Azul céu", cor: "#CAE1FF", imagem: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRo7WfKAkc3akVNIj2WP-Wtu86sVaREP8RWcQ&s" },
+  		            { nome: "Branco" , cor: "#FFF5EE", imagem: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcStoAVZGnxr0Fj-b1U_7bZuCqUwE_ina1nUBw&s" },	              
+		            { nome: "Preto" , cor: "#000000", imagem:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTOegBk-vuaz623yZZrSEkYx2H_w6pyPZ3KWg&s"} ,],
+                     armazenamento: [
+                    { tamanho: "256GB", preco: 7248 },
+                ]
+            },
+
+            // ------------------- Celular 11 ------------------ //
+            {
+                id: 11,
+                nome: "Galaxy S25",
+                descricao: "É o topo de linha compacto da marca, focado em alta portabilidade e potência extrema. Ele traz o processador Snapdragon 8 Elite, 12 GB de RAM e design premium",
+                precoBase: 3889,
+                imagemBase: "https://www.notebookcheck.info/fileadmin/Notebooks/News/_nc4/galaxy-s25-fe-9400-rumours.jpg",
+                cores: [
+                    { nome: "Azul", cor: "#0000FF", imagem: "https://www.oficinadanet.com.br/media/obj_item/2047/381/samsung-galaxy-s25.jpg" },
+  		            { nome: "Branco" , cor: "#FFF5EE", imagem: "https://http2.mlstatic.com/D_728881-MLA99450916060_112025-C.jpg" },],
+                armazenamento: [
+                    { tamanho: "256GB", preco: 3900 },
+                ]
+            },
+
+          // ------------------- Celular 12 ------------------ //
+            {
+                id: 12,
+                nome: "REDMAGIC 11 Pro",
+                descricao: "Redmagic 11 Air 5G Versão Global, Processador Snapdragon 8 Elite, Câmera 50MP, Bateria 7000mAh,256/512GB + 12/19GB RAM",
+                precoBase: 5000,
+                imagemBase: "https://br.redmagic.gg/cdn/shop/files/Black_White_trace.png?v=1774525209",
+                cores: [
+  		            { nome: "Branco" , cor: "#FFF5EE", imagem: "https://br.redmagic.gg/cdn/shop/files/Trace-07_600x600.png?v=1774871146" },	              
+		            { nome: "Preto" , cor: "#000000", imagem:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSKU6Gly3xkjFHcKsveu8f89Oe8my1ps0Ec4g&s"} ,],
+                armazenamento: [
+                    { tamanho: "512GB", preco: 5000 },
+		            { tamanho: "1TB", preco: 8900 },
+                ]
+            },
+
+
+        ];
+
+// ==================== VARIÁVEIS GLOBAIS ====================
+let carrinho = [];
+let usuarios = JSON.parse(localStorage.getItem('usuarios')) || [];
+let usuarioLogado = JSON.parse(localStorage.getItem('usuarioLogado')) || null;
+
+let produtoSelecionado = null;
+let corSelecionada = null;
+let armazenamentoSelecionado = null;
+let paymentMethod = 'pix';
+
+// ==================== AUTH FUNCTIONS ====================
+function showAuthModal() {
+    document.getElementById('auth-modal').classList.remove('hidden');
+    switchTab(0);
+}
+function closeAuthModal() {
+    document.getElementById('auth-modal').classList.add('hidden');
+}
+function switchTab(tab) {
+    const login = document.getElementById('login-form');
+    const register = document.getElementById('register-form');
+    if (tab === 0) {
+        login.classList.remove('hidden'); register.classList.add('hidden');
+    } else {
+        login.classList.add('hidden'); register.classList.remove('hidden');
+    }
+}
+function fazerCadastro() { alert("Função de cadastro - implemente se quiser"); closeAuthModal(); }
+function fazerLogin() { alert("Função de login - implemente se quiser"); closeAuthModal(); }
+function atualizarAuthButton() {
+    const btn = document.getElementById('auth-button');
+    if (usuarioLogado) btn.textContent = `Olá, ${usuarioLogado.nome}`;
+    else btn.textContent = "Entrar / Cadastrar 👤";
+}
+
+// ==================== CARRINHO ====================
+function toggleCart() {
+    const drawer = document.getElementById('cart-drawer');
+    drawer.classList.toggle('hidden');
+    if (!drawer.classList.contains('hidden')) renderCarrinho();
+}
+
+function renderCarrinho() {
+    const container = document.getElementById('cart-items');
+    let html = '', subtotal = 0;
+
+    if (carrinho.length === 0) {
+        container.innerHTML = `<p class="text-center text-slate-400 py-16">Seu carrinho está vazio.</p>`;
+        document.getElementById('subtotal').textContent = 'R$ 0,00';
+        document.getElementById('cart-total').textContent = 'R$ 15,00';
+        return;
+    }
+
+    carrinho.forEach((item, i) => {
+        subtotal += item.preco;
+        html += `
+            <div class="flex gap-4 border-b pb-6">
+                <img src="${item.imagem}" class="w-20 h-20 object-contain rounded-2xl bg-slate-100">
+                <div class="flex-1">
+                    <p class="font-medium">${item.nome}</p>
+                    <p class="text-sm text-slate-500">${item.cor} • ${item.armazenamento}</p>
+                    <p class="font-bold text-[#00bfff]">R$ ${item.preco.toLocaleString('pt-BR')}</p>
+                </div>
+                <button onclick="removerDoCarrinho(${i})" class="text-red-500 text-3xl">×</button>
+            </div>`;
+    });
+
+    container.innerHTML = html;
+    document.getElementById('subtotal').textContent = `R$ ${subtotal.toLocaleString('pt-BR')}`;
+    document.getElementById('cart-total').textContent = `R$ ${(subtotal + 15).toLocaleString('pt-BR')}`;
+}
+
+function removerDoCarrinho(index) {
+    carrinho.splice(index, 1);
+    renderCarrinho();
+    atualizarContadorCarrinho();
+}
+
+function adicionarAoCarrinho() {
+    if (!corSelecionada || !armazenamentoSelecionado) return alert("Escolha cor e armazenamento!");
+    
+    carrinho.push({
+        id: Date.now(),
+        nome: produtoSelecionado.nome,
+        cor: corSelecionada.nome,
+        armazenamento: armazenamentoSelecionado.tamanho,
+        preco: armazenamentoSelecionado.preco,
+        imagem: corSelecionada.imagem
+    });
+    alert("Produto adicionado ao carrinho!");
+    closeProductModal();
+    atualizarContadorCarrinho();
+}
+
+function atualizarContadorCarrinho() {
+    document.getElementById('cart-count').textContent = carrinho.length;
+}
+
+// ==================== CHECKOUT ====================
+function showCheckoutModal() {
+    if (carrinho.length === 0) return alert("Carrinho vazio!");
+    document.getElementById('cart-drawer').classList.add('hidden');
+    document.getElementById('checkout-modal').classList.remove('hidden');
+    selectPaymentMethod('pix');
+    atualizarTotalModal();
+}
+
+function closeCheckoutModal() {
+    document.getElementById('checkout-modal').classList.add('hidden');
+}
+
+function selectPaymentMethod(method) {
+    paymentMethod = method;
+    document.getElementById('btn-pix').classList.toggle('border-[#00bfff]', method === 'pix');
+    document.getElementById('btn-pix').classList.toggle('bg-blue-50', method === 'pix');
+    document.getElementById('btn-cartao').classList.toggle('border-[#00bfff]', method === 'cartao');
+    document.getElementById('cartao-form').classList.toggle('hidden', method !== 'cartao');
+}
+
+function atualizarTotalModal() {
+    const total = carrinho.reduce((acc, item) => acc + item.preco, 0) + 15;
+    document.getElementById('modal-total').textContent = `R$ ${total.toLocaleString('pt-BR')}`;
+}
+
+function confirmarPagamento() {
+    const endereco = document.getElementById('endereco-entrega').value.trim();
+    if (!endereco) return alert("Informe o endereço de entrega!");
+
+    const total = carrinho.reduce((acc, item) => acc + item.preco, 0) + 15;
+    alert(`✅ Compra finalizada com sucesso!\nTotal: R$ ${total.toLocaleString('pt-BR')}\nPagamento: ${paymentMethod.toUpperCase()}`);
+
+    carrinho = [];
+    atualizarContadorCarrinho();
+    closeCheckoutModal();
+}
+
+// ==================== MODAL PRODUTO ====================
+function abrirModalProduto(id) {
+    produtoSelecionado = produtos.find(p => p.id === id);
+    if (!produtoSelecionado) return;
+
+    document.getElementById('modal-nome').textContent = produtoSelecionado.nome;
+    document.getElementById('modal-descricao').textContent = produtoSelecionado.descricao;
+    document.getElementById('modal-imagem').src = produtoSelecionado.cores[0].imagem;
+
+    let storageHTML = '';
+    produtoSelecionado.armazenamento.forEach((item, i) => {
+        storageHTML += `<button onclick="selecionarArmazenamento(this, ${i})" class="storage-btn border-2 border-slate-300 px-6 py-3 rounded-2xl font-medium">${item.tamanho}</button>`;
+    });
+    document.getElementById('storage-options').innerHTML = storageHTML;
+
+    let colorHTML = '';
+    produtoSelecionado.cores.forEach((cor, i) => {
+        colorHTML += `<div onclick="selecionarCor(this, ${i})" class="color-circle" style="background-color: ${cor.cor};"></div>`;
+    });
+    document.getElementById('color-options').innerHTML = colorHTML;
+
+    selecionarArmazenamento(document.querySelector('.storage-btn'), 0);
+    selecionarCor(document.querySelector('.color-circle'), 0);
+
+    document.getElementById('product-modal').classList.remove('hidden');
+}
+
+function closeProductModal() {
+    document.getElementById('product-modal').classList.add('hidden');
+}
+
+function selecionarCor(el, index) {
+    document.querySelectorAll('.color-circle').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
+    corSelecionada = produtoSelecionado.cores[index];
+    document.getElementById('modal-imagem').src = corSelecionada.imagem;
+}
+
+function selecionarArmazenamento(el, index) {
+    document.querySelectorAll('.storage-btn').forEach(e => e.classList.remove('active'));
+    el.classList.add('active');
+    armazenamentoSelecionado = produtoSelecionado.armazenamento[index];
+    document.getElementById('modal-preco').textContent = `R$ ${armazenamentoSelecionado.preco.toLocaleString('pt-BR')}`;
+}
+
+// ==================== RENDER ====================
+function renderProdutos() {
+    const container = document.getElementById('produtos-grid');
+    let html = '';
+    produtos.forEach(p => {
+        html += `
+            <div onclick="abrirModalProduto(${p.id})" class="product-card bg-white rounded-3xl overflow-hidden shadow cursor-pointer">
+                <img src="${p.imagemBase}" class="w-full h-64 object-contain p-4">
+                <div class="p-6">
+                    <h3 class="font-bold text-lg">${p.nome}</h3>
+                    <p class="text-sm text-slate-500 line-clamp-2 my-2">${p.descricao}</p>
+                    <p class="text-2xl font-bold text-[#00bfff] mt-3">R$ ${p.precoBase.toLocaleString('pt-BR')}</p>
+                </div>
+            </div>`;
+    });
+    container.innerHTML = html;
+}
+
+function renderRecomendadosPersonalizados() {
+    const container = document.getElementById('recomendados-grid');
+    let html = '';
+    produtos.slice(0, 3).forEach(p => {
+        html += `
+            <div onclick="abrirModalProduto(${p.id})" class="product-card bg-white rounded-3xl overflow-hidden shadow cursor-pointer">
+                <img src="${p.imagemBase}" class="w-full h-56 object-contain p-6">
+                <div class="p-6">
+                    <h3 class="font-bold text-lg">${p.nome}</h3>
+                    <p class="text-2xl font-bold text-[#00bfff] mt-3">R$ ${p.precoBase.toLocaleString('pt-BR')}</p>
+                </div>
+            </div>`;
+    });
+    container.innerHTML = html;
+}
+
+// Inicialização
+window.onload = () => {
+    renderProdutos();
+    renderRecomendadosPersonalizados();
+    atualizarAuthButton();
+};
+</script>
+</body>
+</html>
