@@ -1,0 +1,65 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap');
+
+:root {
+    --blue: #00bfff;
+    --pink: #ff69b4;
+    /* Criando uma função de transição padrão para reutilizar */
+    --transition-padrao: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body {
+    /* Corrigido para system-ui */
+    font-family: 'Inter', system-ui, sans-serif; 
+}
+
+/* Estilo dos Cards de Produtos */
+.product-card {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.product-card:hover {
+    transform: translateY(-12px);
+    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.15);
+}
+
+/* Cores no modal */
+.color-circle {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 4px #e5e7eb;
+    transition: var(--transition-padrao); /* Transição aplicada de forma segura aqui */
+}
+
+.color-circle.selected {
+    border: 3px solid var(--blue); /* Usando a variável configurada no :root */
+    box-shadow: 0 0 0 6px #bae6fd;
+    transform: scale(1.12);
+}
+
+/* Botões de Armazenamento */
+.storage-btn {
+    transition: var(--transition-padrao); /* Transição aplicada de forma segura aqui */
+}
+
+.storage-btn.active {
+    background-color: var(--blue); /* Usando a variável */
+    color: white;
+    border-color: var(--blue); /* Usando a variável */
+    transform: scale(1.05);
+}
+
+/* Melhorias gerais */
+.rounded-3xl {
+    border-radius: 1.5rem;
+}
+
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-clamp: 2;
+    overflow: hidden;
+}
